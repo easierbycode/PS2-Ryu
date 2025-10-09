@@ -96,6 +96,8 @@ const jumpAnim = new Animation([
     "frames/frame_031.png"
 ], 10);
 
+const background = new Image("frames/background.png");
+
 // Player state
 let posX = 250;
 let posY = GROUND_Y;
@@ -145,16 +147,7 @@ while (true) {
 }
 
 function drawBackground() {
-    // Sky gradient
-    for (let y = 0; y < GROUND_Y; y += 10) {
-        const brightness = 20 + (y / GROUND_Y) * 100;
-        Draw.rect(0, y, SCREEN_WIDTH, 10, 
-                  Color.new(brightness * 0.3, brightness * 0.5, brightness));
-    }
-    
-    // Ground
-    Draw.rect(0, GROUND_Y, SCREEN_WIDTH, SCREEN_HEIGHT - GROUND_Y, 
-              Color.new(139, 90, 43));
+    background.draw(0, 0);
 }
 
 function updateInputBuffer() {

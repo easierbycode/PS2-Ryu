@@ -9,7 +9,7 @@ const WORLD_HEIGHT = SCREEN_HEIGHT * 1.2;
 
 const camera = {
     x: 0,
-    y: 0,
+    y: WORLD_HEIGHT - SCREEN_HEIGHT,
 };
 
 class Animation {
@@ -303,10 +303,10 @@ function updateCamera() {
     camera.x = Math.max(0, Math.min(camera.x, WORLD_WIDTH - SCREEN_WIDTH));
 
     // Vertical follow for Shoryuken
-    let targetY = 0;
+    let targetY = WORLD_HEIGHT - SCREEN_HEIGHT; // Default to bottom
     if (currentAnimation === shoryukenAnim && !isGrounded) {
         // Pan up as player moves up
-        targetY = Math.max(0, (GROUND_Y - posY) * 0.4);
+        targetY = (WORLD_HEIGHT - SCREEN_HEIGHT) - (GROUND_Y - posY) * 0.4;
     }
     camera.y += (targetY - camera.y) * 0.1; // Smoothing
     camera.y = Math.max(0, Math.min(camera.y, WORLD_HEIGHT - SCREEN_HEIGHT));

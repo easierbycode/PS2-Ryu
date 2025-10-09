@@ -2,7 +2,7 @@ Screen.setVSync(true);
 
 const SCREEN_WIDTH = 640;
 const SCREEN_HEIGHT = 448;
-const GROUND_Y = 320;
+const GROUND_Y = 380;
 
 const WORLD_WIDTH = SCREEN_WIDTH * 1.5;
 const WORLD_HEIGHT = SCREEN_HEIGHT * 1.2;
@@ -12,9 +12,16 @@ const camera = {
     y: WORLD_HEIGHT - SCREEN_HEIGHT,
 };
 
+const PLAYER_SCALE = 1.2;
+
 class Animation {
     constructor(frames, fps) {
-        this.frames = frames.map(f => new Image(f));
+        this.frames = frames.map(f => {
+            const img = new Image(f);
+            img.width *= PLAYER_SCALE;
+            img.height *= PLAYER_SCALE;
+            return img;
+        });
         this.fps = 1000000 / fps;
         this.timer = Timer.new();
         this.frame = 0;

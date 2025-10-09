@@ -2,7 +2,7 @@ Screen.setVSync(true);
 
 const SCREEN_WIDTH = 640;
 const SCREEN_HEIGHT = 448;
-const GROUND_Y = 420;
+const GROUND_Y = 390;
 
 const WORLD_WIDTH = SCREEN_WIDTH * 1.5;
 const WORLD_HEIGHT = SCREEN_HEIGHT * 1.2;
@@ -52,7 +52,6 @@ class Animation {
     }
 }
 
-// Correct animations (32 frames total)
 const idleAnim = new Animation([
     "frames/frame_000.png",
     "frames/frame_001.png",
@@ -61,7 +60,7 @@ const idleAnim = new Animation([
 ], 6);
 
 const crouchAnim = new Animation([
-    "frames/frame_018.png"  // Use first crouch kick frame as crouch pose
+    "frames/frame_018.png"
 ], 6);
 
 const lightPunchAnim = new Animation([
@@ -92,7 +91,7 @@ const crouchLightKickAnim = new Animation([
     "frames/frame_019.png",
     "frames/frame_020.png",
     "frames/frame_021.png",
-    "frames/frame_018.png"  // Repeats frame 18 at end
+    "frames/frame_018.png"
 ], 15);
 
 const crouchLightPunchAnim = new Animation([
@@ -112,11 +111,8 @@ const jumpAnim = new Animation([
 ], 10);
 
 const background = new Image("frames/background.png");
-background.width = WORLD_WIDTH;
-background.height = WORLD_HEIGHT;
 
-// Player state
-let posX = 250;
+let posX = SCREEN_WIDTH / 2;
 let posY = GROUND_Y;
 let velY = 0;
 let velX = 0;
@@ -126,13 +122,11 @@ const moveSpeed = 4;
 let isGrounded = true;
 let facingLeft = false;
 
-// Combat state
 let isAttacking = false;
 let attackFrames = 0;
 let isCrouching = false;
 let currentAnimation = idleAnim;
 
-// Input buffering for special moves
 let inputBuffer = [];
 const BUFFER_SIZE = 10;
 let bufferTimer = 0;
@@ -140,14 +134,11 @@ let bufferTimer = 0;
 let pad = Pads.get();
 let oldPad = pad;
 
-// Main game loop
 while (true) {
     Screen.clear();
     
-    // Background
     drawBackground();
     
-    // Update
     oldPad = pad;
     pad = Pads.get();
     
@@ -156,7 +147,6 @@ while (true) {
     applyPhysics();
     updateCamera();
     
-    // Draw Ryu
     const frame = currentAnimation.frames[currentAnimation.frame];
     const playerWidth = frame.width;
     const playerHeight = frame.height;
@@ -168,6 +158,8 @@ while (true) {
 }
 
 function drawBackground() {
+    background.width = WORLD_WIDTH;
+    background.height = WORLD_HEIGHT;
     background.draw(-camera.x, -camera.y);
 }
 
@@ -185,7 +177,6 @@ function updateInputBuffer() {
         inputBuffer.push({input: 'punch', time: bufferTimer});
     }
     
-    // Remove old inputs (older than 30 frames)
     inputBuffer = inputBuffer.filter(item => bufferTimer - item.time < 30);
 }
 
@@ -233,7 +224,6 @@ function handleInput() {
         return;
     }
     
-    // Crouching attacks
     if (isCrouching) {
         if (!oldPad.pressed(Pads.SQUARE) && pad.pressed(Pads.SQUARE)) {
             performAttack(crouchLightPunchAnim, 18);
@@ -249,7 +239,6 @@ function handleInput() {
         return;
     }
     
-    // Standing attacks
     if (!oldPad.pressed(Pads.SQUARE) && pad.pressed(Pads.SQUARE) && isGrounded) {
         performAttack(lightPunchAnim, 18);
         return;
@@ -260,7 +249,6 @@ function handleInput() {
         return;
     }
     
-    // Jumping
     if (!oldPad.pressed(Pads.UP) && pad.pressed(Pads.UP) && isGrounded) {
         velY = jumpForce;
         isGrounded = false;
@@ -268,7 +256,6 @@ function handleInput() {
         currentAnimation.reset();
     }
     
-    // Horizontal movement
     velX = 0;
     if (pad.pressed(Pads.LEFT)) {
         velX = -moveSpeed;
@@ -307,18 +294,15 @@ function performShoryuken() {
 }
 
 function updateCamera() {
-    // Horizontal follow
     const targetX = posX - SCREEN_WIDTH / 2;
-    camera.x += (targetX - camera.x) * 0.1; // Smoothing
+    camera.x += (targetX - camera.x) * 0.1;
     camera.x = Math.max(0, Math.min(camera.x, WORLD_WIDTH - SCREEN_WIDTH));
 
-    // Vertical follow for Shoryuken
-    let targetY = WORLD_HEIGHT - SCREEN_HEIGHT; // Default to bottom
+    let targetY = WORLD_HEIGHT - SCREEN_HEIGHT;
     if (currentAnimation === shoryukenAnim && !isGrounded) {
-        // Pan up as player moves up
         targetY = (WORLD_HEIGHT - SCREEN_HEIGHT) - (GROUND_Y - posY) * 0.4;
     }
-    camera.y += (targetY - camera.y) * 0.1; // Smoothing
+    camera.y += (targetY - camera.y) * 0.1;
     camera.y = Math.max(0, Math.min(camera.y, WORLD_HEIGHT - SCREEN_HEIGHT));
 }
 
@@ -327,18 +311,17 @@ function applyPhysics() {
     const playerWidth = currentAnimation.frames[currentAnimation.frame].width;
     posX = Math.max(playerWidth / 2, Math.min(WORLD_WIDTH - playerWidth / 2, posX));
     
-    // Apply gravity
     velY += gravity;
     posY += velY;
 
     if (posY >= GROUND_Y) {
-        posY = GROUND_Y;
-        velY = 0;
-        isGrounded = true;
-        if (!isAttacking) {
+        if (velY > 0 && !isAttacking) {
             currentAnimation = idleAnim;
             currentAnimation.reset();
         }
+        posY = GROUND_Y;
+        velY = 0;
+        isGrounded = true;
     } else {
         isGrounded = false;
     }

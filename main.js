@@ -2,7 +2,7 @@ Screen.setVSync(true);
 
 const SCREEN_WIDTH = 640;
 const SCREEN_HEIGHT = 448;
-const GROUND_Y = 430;
+const GROUND_Y = 360;
 
 const WORLD_WIDTH = SCREEN_WIDTH * 1.5;
 const WORLD_HEIGHT = SCREEN_HEIGHT * 1.2;

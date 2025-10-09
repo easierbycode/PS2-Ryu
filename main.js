@@ -2,7 +2,7 @@ Screen.setVSync(true);
 
 const SCREEN_WIDTH = 640;
 const SCREEN_HEIGHT = 448;
-const GROUND_Y = 360;
+const GROUND_Y = 420;
 
 const WORLD_WIDTH = SCREEN_WIDTH * 1.5;
 const WORLD_HEIGHT = SCREEN_HEIGHT * 1.2;
@@ -157,7 +157,10 @@ while (true) {
     updateCamera();
     
     // Draw Ryu
-    currentAnimation.draw(posX - camera.x, posY - camera.y, facingLeft);
+    const frame = currentAnimation.frames[currentAnimation.frame];
+    const playerWidth = frame.width;
+    const playerHeight = frame.height;
+    currentAnimation.draw(posX - playerWidth / 2 - camera.x, posY - playerHeight - camera.y, facingLeft);
     
     Screen.flip();
     
@@ -321,20 +324,22 @@ function updateCamera() {
 
 function applyPhysics() {
     posX += velX;
-    posX = Math.max(30, Math.min(WORLD_WIDTH - 30, posX));
+    const playerWidth = currentAnimation.frames[currentAnimation.frame].width;
+    posX = Math.max(playerWidth / 2, Math.min(WORLD_WIDTH - playerWidth / 2, posX));
     
-    if (!isGrounded) {
-        velY += gravity;
-        posY += velY;
-        
-        if (posY >= GROUND_Y) {
-            posY = GROUND_Y;
-            velY = 0;
-            isGrounded = true;
-            if (!isAttacking) {
-                currentAnimation = idleAnim;
-                currentAnimation.reset();
-            }
+    // Apply gravity
+    velY += gravity;
+    posY += velY;
+
+    if (posY >= GROUND_Y) {
+        posY = GROUND_Y;
+        velY = 0;
+        isGrounded = true;
+        if (!isAttacking) {
+            currentAnimation = idleAnim;
+            currentAnimation.reset();
         }
+    } else {
+        isGrounded = false;
     }
 }

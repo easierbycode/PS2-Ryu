@@ -12,7 +12,7 @@ const camera = {
     y: WORLD_HEIGHT - SCREEN_HEIGHT,
 };
 
-const PLAYER_SCALE = 1.2;
+const PLAYER_SCALE = 1.5;
 
 class Animation {
     constructor(frames, fps) {

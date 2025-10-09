@@ -97,6 +97,8 @@ const jumpAnim = new Animation([
 ], 10);
 
 const background = new Image("frames/background.png");
+background.width = SCREEN_WIDTH;
+background.height = SCREEN_HEIGHT;
 
 // Player state
 let posX = 250;
@@ -147,7 +149,7 @@ while (true) {
 }
 
 function drawBackground() {
-    background.draw(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
+    background.draw(0, 0);
 }
 
 function updateInputBuffer() {

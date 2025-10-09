@@ -147,7 +147,7 @@ while (true) {
 }
 
 function drawBackground() {
-    background.draw(0, 0);
+    background.draw(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
 }
 
 function updateInputBuffer() {

@@ -4,6 +4,14 @@ const SCREEN_WIDTH = 640;
 const SCREEN_HEIGHT = 448;
 const GROUND_Y = 320;
 
+const WORLD_WIDTH = SCREEN_WIDTH * 1.5;
+const WORLD_HEIGHT = SCREEN_HEIGHT * 1.2;
+
+const camera = {
+    x: 0,
+    y: 0,
+};
+
 class Animation {
     constructor(frames, fps) {
         this.frames = frames.map(f => new Image(f));
@@ -97,8 +105,8 @@ const jumpAnim = new Animation([
 ], 10);
 
 const background = new Image("frames/background.png");
-background.width = SCREEN_WIDTH;
-background.height = SCREEN_HEIGHT;
+background.width = WORLD_WIDTH;
+background.height = WORLD_HEIGHT;
 
 // Player state
 let posX = 250;
@@ -139,9 +147,10 @@ while (true) {
     updateInputBuffer();
     handleInput();
     applyPhysics();
+    updateCamera();
     
     // Draw Ryu
-    currentAnimation.draw(posX, posY, facingLeft);
+    currentAnimation.draw(posX - camera.x, posY - camera.y, facingLeft);
     
     Screen.flip();
     
@@ -149,7 +158,7 @@ while (true) {
 }
 
 function drawBackground() {
-    background.draw(0, 0);
+    background.draw(-camera.x, -camera.y);
 }
 
 function updateInputBuffer() {
@@ -287,9 +296,25 @@ function performShoryuken() {
     inputBuffer = [];
 }
 
+function updateCamera() {
+    // Horizontal follow
+    const targetX = posX - SCREEN_WIDTH / 2;
+    camera.x += (targetX - camera.x) * 0.1; // Smoothing
+    camera.x = Math.max(0, Math.min(camera.x, WORLD_WIDTH - SCREEN_WIDTH));
+
+    // Vertical follow for Shoryuken
+    let targetY = 0;
+    if (currentAnimation === shoryukenAnim && !isGrounded) {
+        // Pan up as player moves up
+        targetY = Math.max(0, (GROUND_Y - posY) * 0.4);
+    }
+    camera.y += (targetY - camera.y) * 0.1; // Smoothing
+    camera.y = Math.max(0, Math.min(camera.y, WORLD_HEIGHT - SCREEN_HEIGHT));
+}
+
 function applyPhysics() {
     posX += velX;
-    posX = Math.max(30, Math.min(SCREEN_WIDTH - 30, posX));
+    posX = Math.max(30, Math.min(WORLD_WIDTH - 30, posX));
     
     if (!isGrounded) {
         velY += gravity;

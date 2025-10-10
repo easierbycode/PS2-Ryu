@@ -2,26 +2,11 @@ Screen.setVSync(true);
 
 const SCREEN_WIDTH = 640;
 const SCREEN_HEIGHT = 448;
-const GROUND_Y = 428; // Adjusted for player height and 20px margin from bottom
-
-const WORLD_WIDTH = SCREEN_WIDTH * 1.5;
-const WORLD_HEIGHT = SCREEN_HEIGHT * 1.2;
-
-const camera = {
-    x: 0,
-    y: WORLD_HEIGHT - SCREEN_HEIGHT,
-};
-
-const PLAYER_SCALE = 2.0;
+const GROUND_Y = 340;
 
 class Animation {
     constructor(frames, fps) {
-        this.frames = frames.map(f => {
-            const img = new Image(f);
-            img.width *= PLAYER_SCALE;
-            img.height *= PLAYER_SCALE;
-            return img;
-        });
+        this.frames = frames.map(f => new Image(f));
         this.fps = 1000000 / fps;
         this.timer = Timer.new();
         this.frame = 0;
@@ -52,6 +37,7 @@ class Animation {
     }
 }
 
+// Correct animations (32 frames total)
 const idleAnim = new Animation([
     "frames/frame_000.png",
     "frames/frame_001.png",
@@ -60,7 +46,7 @@ const idleAnim = new Animation([
 ], 6);
 
 const crouchAnim = new Animation([
-    "frames/frame_018.png"
+    "frames/frame_018.png"  // Use first crouch kick frame as crouch pose
 ], 6);
 
 const lightPunchAnim = new Animation([
@@ -91,7 +77,7 @@ const crouchLightKickAnim = new Animation([
     "frames/frame_019.png",
     "frames/frame_020.png",
     "frames/frame_021.png",
-    "frames/frame_018.png"
+    "frames/frame_018.png"  // Repeats frame 18 at end
 ], 15);
 
 const crouchLightPunchAnim = new Animation([
@@ -110,9 +96,8 @@ const jumpAnim = new Animation([
     "frames/frame_031.png"
 ], 10);
 
-const background = new Image("frames/background.png");
-
-let posX = SCREEN_WIDTH / 2;
+// Player state
+let posX = 250;
 let posY = GROUND_Y;
 let velY = 0;
 let velX = 0;
@@ -122,11 +107,13 @@ const moveSpeed = 4;
 let isGrounded = true;
 let facingLeft = false;
 
+// Combat state
 let isAttacking = false;
 let attackFrames = 0;
 let isCrouching = false;
 let currentAnimation = idleAnim;
 
+// Input buffering for special moves
 let inputBuffer = [];
 const BUFFER_SIZE = 10;
 let bufferTimer = 0;
@@ -134,29 +121,23 @@ let bufferTimer = 0;
 let pad = Pads.get();
 let oldPad = pad;
 
+// Main game loop
 while (true) {
     Screen.clear();
     
+    // Background
     drawBackground();
     
+    // Update
     oldPad = pad;
     pad = Pads.get();
     
-    // Update physics state first
-    applyPhysics();
-
-    // Then handle input based on the new state
     updateInputBuffer();
     handleInput();
+    applyPhysics();
     
-    // Then update the camera
-    updateCamera();
-
-    // Finally, draw everything
-    const frame = currentAnimation.frames[currentAnimation.frame];
-    const playerWidth = frame.width;
-    const playerHeight = frame.height;
-    currentAnimation.draw(posX - playerWidth / 2 - camera.x, posY - playerHeight - camera.y, facingLeft);
+    // Draw Ryu
+    currentAnimation.draw(posX, posY, facingLeft);
     
     Screen.flip();
     
@@ -164,9 +145,16 @@ while (true) {
 }
 
 function drawBackground() {
-    background.width = WORLD_WIDTH;
-    background.height = WORLD_HEIGHT;
-    background.draw(-camera.x, -camera.y);
+    // Sky gradient
+    for (let y = 0; y < GROUND_Y; y += 10) {
+        const brightness = 20 + (y / GROUND_Y) * 100;
+        Draw.rect(0, y, SCREEN_WIDTH, 10,
+                  Color.new(brightness * 0.3, brightness * 0.5, brightness));
+    }
+
+    // Ground
+    Draw.rect(0, GROUND_Y, SCREEN_WIDTH, SCREEN_HEIGHT - GROUND_Y,
+              Color.new(139, 90, 43));
 }
 
 function updateInputBuffer() {
@@ -183,6 +171,7 @@ function updateInputBuffer() {
         inputBuffer.push({input: 'punch', time: bufferTimer});
     }
     
+    // Remove old inputs (older than 30 frames)
     inputBuffer = inputBuffer.filter(item => bufferTimer - item.time < 30);
 }
 
@@ -230,6 +219,7 @@ function handleInput() {
         return;
     }
     
+    // Crouching attacks
     if (isCrouching) {
         if (!oldPad.pressed(Pads.SQUARE) && pad.pressed(Pads.SQUARE)) {
             performAttack(crouchLightPunchAnim, 18);
@@ -245,6 +235,7 @@ function handleInput() {
         return;
     }
     
+    // Standing attacks
     if (!oldPad.pressed(Pads.SQUARE) && pad.pressed(Pads.SQUARE) && isGrounded) {
         performAttack(lightPunchAnim, 18);
         return;
@@ -255,6 +246,7 @@ function handleInput() {
         return;
     }
     
+    // Jumping
     if (!oldPad.pressed(Pads.UP) && pad.pressed(Pads.UP) && isGrounded) {
         velY = jumpForce;
         isGrounded = false;
@@ -262,6 +254,7 @@ function handleInput() {
         currentAnimation.reset();
     }
     
+    // Horizontal movement
     velX = 0;
     if (pad.pressed(Pads.LEFT)) {
         velX = -moveSpeed;
@@ -299,32 +292,22 @@ function performShoryuken() {
     inputBuffer = [];
 }
 
-function updateCamera() {
-    const targetX = posX - SCREEN_WIDTH / 2;
-    camera.x += (targetX - camera.x) * 0.1;
-    camera.x = Math.max(0, Math.min(camera.x, WORLD_WIDTH - SCREEN_WIDTH));
-
-    let targetY = WORLD_HEIGHT - SCREEN_HEIGHT;
-    if (currentAnimation === shoryukenAnim && !isGrounded) {
-        targetY = (WORLD_HEIGHT - SCREEN_HEIGHT) - (GROUND_Y - posY) * 0.4;
-    }
-    camera.y += (targetY - camera.y) * 0.1;
-    camera.y = Math.max(0, Math.min(camera.y, WORLD_HEIGHT - SCREEN_HEIGHT));
-}
-
 function applyPhysics() {
     posX += velX;
-    const playerWidth = currentAnimation.frames[currentAnimation.frame].width;
-    posX = Math.max(playerWidth / 2, Math.min(WORLD_WIDTH - playerWidth / 2, posX));
+    posX = Math.max(30, Math.min(SCREEN_WIDTH - 30, posX));
     
-    velY += gravity;
-    posY += velY;
+    if (!isGrounded) {
+        velY += gravity;
+        posY += velY;
 
-    if (posY >= GROUND_Y) {
-        posY = GROUND_Y;
-        velY = 0;
-        isGrounded = true;
-    } else {
-        isGrounded = false;
+        if (posY >= GROUND_Y) {
+            posY = GROUND_Y;
+            velY = 0;
+            isGrounded = true;
+            if (!isAttacking) {
+                currentAnimation = idleAnim;
+                currentAnimation.reset();
+            }
+        }
     }
 }

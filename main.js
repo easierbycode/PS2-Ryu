@@ -4,9 +4,25 @@ const SCREEN_WIDTH = 640;
 const SCREEN_HEIGHT = 448;
 const GROUND_Y = 340;
 
+const WORLD_WIDTH = SCREEN_WIDTH * 1.2;
+const WORLD_HEIGHT = SCREEN_HEIGHT;
+
+const background = new Image("background.png");
+background.width = WORLD_WIDTH;
+background.height = WORLD_HEIGHT;
+
+// Camera
+let cameraX = 0;
+let cameraY = 0;
+
 class Animation {
     constructor(frames, fps) {
-        this.frames = frames.map(f => new Image(f));
+        this.frames = frames.map(f => {
+            const img = new Image(f);
+            img.width *= 2;
+            img.height *= 2;
+            return img;
+        });
         this.fps = 1000000 / fps;
         this.timer = Timer.new();
         this.frame = 0;
@@ -135,9 +151,10 @@ while (true) {
     updateInputBuffer();
     handleInput();
     applyPhysics();
+    updateCamera();
     
     // Draw Ryu
-    currentAnimation.draw(posX, posY, facingLeft);
+    currentAnimation.draw(posX - cameraX, posY - cameraY, facingLeft);
     
     Screen.flip();
     
@@ -145,16 +162,24 @@ while (true) {
 }
 
 function drawBackground() {
-    // Sky gradient
-    for (let y = 0; y < GROUND_Y; y += 10) {
-        const brightness = 20 + (y / GROUND_Y) * 100;
-        Draw.rect(0, y, SCREEN_WIDTH, 10,
-                  Color.new(brightness * 0.3, brightness * 0.5, brightness));
+    background.draw(-cameraX, -cameraY);
+}
+
+function updateCamera() {
+    // Follow player horizontally
+    cameraX = posX - SCREEN_WIDTH / 2;
+
+    // Follow player vertically if they jump above the screen's vertical midpoint
+    const cameraLockY = WORLD_HEIGHT - SCREEN_HEIGHT;
+    if (posY - cameraLockY < SCREEN_HEIGHT / 2) {
+        cameraY = posY - SCREEN_HEIGHT / 2;
+    } else {
+        cameraY = cameraLockY;
     }
 
-    // Ground
-    Draw.rect(0, GROUND_Y, SCREEN_WIDTH, SCREEN_HEIGHT - GROUND_Y,
-              Color.new(139, 90, 43));
+    // Clamp camera to world boundaries
+    cameraX = Math.max(0, Math.min(cameraX, WORLD_WIDTH - SCREEN_WIDTH));
+    cameraY = Math.max(0, Math.min(cameraY, WORLD_HEIGHT - SCREEN_HEIGHT));
 }
 
 function updateInputBuffer() {
@@ -294,7 +319,7 @@ function performShoryuken() {
 
 function applyPhysics() {
     posX += velX;
-    posX = Math.max(30, Math.min(SCREEN_WIDTH - 30, posX));
+    posX = Math.max(30, Math.min(WORLD_WIDTH - 30, posX));
     
     if (!isGrounded) {
         velY += gravity;

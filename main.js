@@ -11,6 +11,9 @@ const background = new Image("background.png");
 background.width = WORLD_WIDTH;
 background.height = WORLD_HEIGHT;
 
+// Ryu offset
+const FLIP_OFFSET = 60;  // Adjust this value until it looks right
+
 // Camera
 let cameraX = 0;
 let cameraY = 0;
@@ -35,7 +38,7 @@ class Animation {
         }
 
         const img = this.frames[this.frame];
-        
+
         if (flipH) {
             img.startx = img.width;
             img.endx = 0;
@@ -43,7 +46,7 @@ class Animation {
             img.startx = 0;
             img.endx = img.width;
         }
-        
+
         img.draw(x, y);
     }
 
@@ -140,24 +143,25 @@ let oldPad = pad;
 // Main game loop
 while (true) {
     Screen.clear();
-    
+
     // Background
     drawBackground();
-    
+
     // Update
     oldPad = pad;
     pad = Pads.get();
-    
+
     updateInputBuffer();
     handleInput();
     applyPhysics();
     updateCamera();
-    
+
     // Draw Ryu
-    currentAnimation.draw(posX - cameraX, posY - cameraY, facingLeft);
-    
+    const drawX = facingLeft ? (posX - cameraX - FLIP_OFFSET) : (posX - cameraX);
+    currentAnimation.draw(drawX, posY - cameraY, facingLeft);
+
     Screen.flip();
-    
+
     bufferTimer++;
 }
 
@@ -184,33 +188,33 @@ function updateCamera() {
 
 function updateInputBuffer() {
     if (!oldPad.pressed(Pads.DOWN) && pad.pressed(Pads.DOWN)) {
-        inputBuffer.push({input: 'down', time: bufferTimer});
+        inputBuffer.push({ input: 'down', time: bufferTimer });
     }
     if (!oldPad.pressed(Pads.LEFT) && pad.pressed(Pads.LEFT)) {
-        inputBuffer.push({input: 'left', time: bufferTimer});
+        inputBuffer.push({ input: 'left', time: bufferTimer });
     }
     if (!oldPad.pressed(Pads.RIGHT) && pad.pressed(Pads.RIGHT)) {
-        inputBuffer.push({input: 'right', time: bufferTimer});
+        inputBuffer.push({ input: 'right', time: bufferTimer });
     }
     if (!oldPad.pressed(Pads.SQUARE) && pad.pressed(Pads.SQUARE)) {
-        inputBuffer.push({input: 'punch', time: bufferTimer});
+        inputBuffer.push({ input: 'punch', time: bufferTimer });
     }
-    
+
     // Remove old inputs (older than 30 frames)
     inputBuffer = inputBuffer.filter(item => bufferTimer - item.time < 30);
 }
 
 function checkShoryuken() {
     if (inputBuffer.length < 4) return false;
-    
+
     const recent = inputBuffer.slice(-4);
     const forwardDir = facingLeft ? 'left' : 'right';
-    
+
     let hasFirstForward = false;
     let hasDown = false;
     let hasSecondForward = false;
     let hasPunch = false;
-    
+
     for (let i = 0; i < recent.length; i++) {
         if (!hasFirstForward && recent[i].input === forwardDir) {
             hasFirstForward = true;
@@ -222,7 +226,7 @@ function checkShoryuken() {
             hasPunch = true;
         }
     }
-    
+
     return hasFirstForward && hasDown && hasSecondForward && hasPunch;
 }
 
@@ -236,14 +240,14 @@ function handleInput() {
         }
         return;
     }
-    
+
     isCrouching = pad.pressed(Pads.DOWN) && isGrounded;
-    
+
     if (checkShoryuken() && isGrounded) {
         performShoryuken();
         return;
     }
-    
+
     // Crouching attacks
     if (isCrouching) {
         if (!oldPad.pressed(Pads.SQUARE) && pad.pressed(Pads.SQUARE)) {
@@ -254,23 +258,23 @@ function handleInput() {
             performAttack(crouchLightKickAnim, 30);
             return;
         }
-        
+
         currentAnimation = crouchAnim;
         velX = 0;
         return;
     }
-    
+
     // Standing attacks
     if (!oldPad.pressed(Pads.SQUARE) && pad.pressed(Pads.SQUARE) && isGrounded) {
         performAttack(lightPunchAnim, 18);
         return;
     }
-    
+
     if (!oldPad.pressed(Pads.CROSS) && pad.pressed(Pads.CROSS) && isGrounded) {
         performAttack(lightKickAnim, 18);
         return;
     }
-    
+
     // Jumping
     if (!oldPad.pressed(Pads.UP) && pad.pressed(Pads.UP) && isGrounded) {
         velY = jumpForce;
@@ -278,7 +282,7 @@ function handleInput() {
         currentAnimation = jumpAnim;
         currentAnimation.reset();
     }
-    
+
     // Horizontal movement
     velX = 0;
     if (pad.pressed(Pads.LEFT)) {
@@ -310,17 +314,17 @@ function performShoryuken() {
     attackFrames = 48;
     currentAnimation = shoryukenAnim;
     currentAnimation.reset();
-    
+
     velY = jumpForce * 1.2;
     isGrounded = false;
-    
+
     inputBuffer = [];
 }
 
 function applyPhysics() {
     posX += velX;
     posX = Math.max(30, Math.min(WORLD_WIDTH - 30, posX));
-    
+
     if (!isGrounded) {
         velY += gravity;
         posY += velY;

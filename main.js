@@ -2,7 +2,7 @@ Screen.setVSync(true);
 
 const SCREEN_WIDTH = 640;
 const SCREEN_HEIGHT = 448;
-const GROUND_Y = 390;
+const GROUND_Y = 428; // Adjusted for player height and 20px margin from bottom
 
 const WORLD_WIDTH = SCREEN_WIDTH * 1.5;
 const WORLD_HEIGHT = SCREEN_HEIGHT * 1.2;
@@ -142,11 +142,17 @@ while (true) {
     oldPad = pad;
     pad = Pads.get();
     
+    // Update physics state first
+    applyPhysics();
+
+    // Then handle input based on the new state
     updateInputBuffer();
     handleInput();
-    applyPhysics();
-    updateCamera();
     
+    // Then update the camera
+    updateCamera();
+
+    // Finally, draw everything
     const frame = currentAnimation.frames[currentAnimation.frame];
     const playerWidth = frame.width;
     const playerHeight = frame.height;
@@ -315,10 +321,6 @@ function applyPhysics() {
     posY += velY;
 
     if (posY >= GROUND_Y) {
-        if (velY > 0 && !isAttacking) {
-            currentAnimation = idleAnim;
-            currentAnimation.reset();
-        }
         posY = GROUND_Y;
         velY = 0;
         isGrounded = true;
